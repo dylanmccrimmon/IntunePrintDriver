@@ -9,7 +9,7 @@ Start-Transcript -Path "$($env:TEMP)\IntunePrintDriver.log" -Append
 Write-Output "Starting Uninstall-PrintDriver.ps1"
 
 # Generate Variables
-$PNPUtilPath = Join-Path -Path "$([Environment]::SystemDirectory)" -ChildPath 'pnputil.exe'
+$PNPUtilPath = Join-Path -Path "C:\Windows\SysNative" -ChildPath 'pnputil.exe'
 
 Write-Output "Passed Variables"
 Write-Output "Driver Name: $DriverName"

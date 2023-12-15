@@ -11,7 +11,7 @@ Start-Transcript -Path "$($env:TEMP)\IntunePrintDriver.log" -Append
 Write-Output "Starting IntunePrintDriver.ps1"
 
 # Generate Variables
-$PNPUtilPath = Join-Path -Path "$([Environment]::SystemDirectory)" -ChildPath 'pnputil.exe'
+$PNPUtilPath = Join-Path -Path "C:\Windows\SysNative" -ChildPath 'pnputil.exe'
 $INFFilePath = Join-Path -Path $PSScriptRoot -ChildPath "Driver\$INFFile"
 
 Write-Output "Passed Variables"
