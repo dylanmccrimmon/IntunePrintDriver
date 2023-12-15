@@ -16,7 +16,7 @@ git clone https://github.com/dylanmccrimmon/IntunePrintDriver
 
 If you don't have Git installed, you can instead download it in a browser with the below URL
 
-``` http
+```
 https://codeload.github.com/dylanmccrimmon/IntunePrintDriver/zip/refs/heads/main
 ```
 
@@ -36,7 +36,7 @@ You'll now need to add your driver to the Driver folder. Make sure all of the re
     └── MomUdPclXLPrint.ini
 ```
 
-  Grab the driver name
+## Grab the driver name
 You can usually find the driver name within the INF file of your driver; you will need this later on. Open up the INF file in your favorite text editor. In the file you should be able to find the driver name, in our example, it's **uniFlow Universal PclXL Driver**.
 
 ![Driver Name](/Docs/Assets/DriverName.jpg)
