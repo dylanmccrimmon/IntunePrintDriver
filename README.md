@@ -1,5 +1,5 @@
 # IntunePrinterDriver
-![GitHub License](https://img.shields.io/github/license/dyanmccrimmon/IntunePrinterDriver)
+![GitHub License](https://img.shields.io/github/license/dylanmccrimmon/IntunePrinterDriver)
 
 
 ## Overview
