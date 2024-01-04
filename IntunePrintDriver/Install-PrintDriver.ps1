@@ -1,58 +1,78 @@
-[CmdletBinding()]
+ [CmdletBinding()]
 Param (
     [Parameter(Mandatory = $True)]
     [String]$DriverName,
     [Parameter(Mandatory = $True)]
-    [String]$INFFile
+    [String]$INFFile,
+    [Parameter(Mandatory = $False)]
+    [String]$CatalogFile
+
 )
 
 Start-Transcript -Path "$($env:TEMP)\IntunePrintDriver.log" -Append
 
 Write-Output "Starting IntunePrintDriver.ps1"
 
-# Generate Variables
-$PNPUtilPath = Join-Path -Path "C:\Windows\SysNative" -ChildPath 'pnputil.exe'
-$INFFilePath = Join-Path -Path $PSScriptRoot -ChildPath "Driver\$INFFile"
+#Run script in 64bit PowerShell to enumerate correct path for pnputil
+If ($ENV:PROCESSOR_ARCHITEW6432 -eq "AMD64") {
+    Write-Output "Powershell is running in a 32bit context. Re-running in SysNative."
+    $ThrowBad = $True
+    Try {
+        &"$ENV:WINDIR\SysNative\WindowsPowershell\v1.0\PowerShell.exe" -File $PSCOMMANDPATH -DriverName "$DriverName" -INFFile "$INFFile" -CatalogFile $CatalogFile
+    }
+    Catch {
+        Write-Error "Failed to start $PSCOMMANDPATH"
+        Write-Warning "$($_.Exception.Message)"
+        Exit 0
+    }
+}
 
-Write-Output "Passed Variables"
-Write-Output "Driver Name: $DriverName"
-Write-Output "INF File: $INFFile"
-Write-Output "Generated Variables"
-Write-Output "PNPUtil Path: $PNPUtilPath"
-Write-Output "INF File Path: $INFFilePath"
+If (-not $ThrowBad) {
 
-# Check if the driver is already present in Print Management
-$DriverExist = Get-PrinterDriver -Name $DriverName -ErrorAction SilentlyContinue
+    
+    $INFFilePath = Join-Path -Path $PSScriptRoot -ChildPath "Driver\$INFFile"
 
-# If the driver is already present, exit the script
-if ($DriverExist) {
-    Write-Output "Driver $DriverName is already installed. Exiting script."
+    Write-Output "Driver Name: $DriverName"
+    Write-Output "INF File: $INFFile"
+    Write-Output "INF File Path: $INFFilePath"
+    
+
+    if ($CatalogFile) {
+        $CatalogFilePath = Join-Path -Path $PSScriptRoot -ChildPath "Driver\$CatalogFile"
+        Write-Output "Catalog File: $CatalogFile"
+        Write-Output "Catalog File Path: $CatalogFilePath"
+        Write-Output "Adding the publisher certificate to the Trusted Prublisher store"
+
+        # Trust the publisher certificate
+        $signature = Get-AuthenticodeSignature $CatalogFilePath
+        $store = Get-Item -Path Cert:\LocalMachine\TrustedPublisher
+        $store.Open("ReadWrite")
+        $store.Add($signature.SignerCertificate)
+        $store.Close() 
+    }
+
+
+    # Add the driver to the Windows Driver Store
+    Try {
+        Write-Output "Running command: PNPUtil"
+        & pnputil.exe /add-driver $INFFilePath /install /force
+    }
+    Catch {
+        Write-Output "An error occurred while adding the driver to the Windows Driver Store. Error: $($_.Exception)"
+        Exit 1
+    }
+
+    # Install the driver if there was no error
+    Try {
+        Write-Output "Installing Printer Driver to Print Management"
+        Add-PrinterDriver -Name $DriverName -Confirm:$false
+    }
+    Catch {
+        Write-Output "An error occurred while installing the driver to the Print Management. Error: $($_.Exception)"
+        Exit 1
+    }
+
+    Write-Output "Script has completed successfully."
     Exit 0
-}
 
-# Add the driver to the Windows Driver Store
-Try {
-    $INFARGS = @(
-            "/add-driver"
-            "`"$INFFilePath`""
-    )
-    Write-Output "Running command: Start-Process $PNPUtilPath -ArgumentList $($INFARGS) -NoNewWindow -Wait"
-    Start-Process $PNPUtilPath -ArgumentList $INFARGS -NoNewWindow -Wait | Out-Null
-}
-Catch {
-    Write-Output "An error occurred while adding the driver to the Windows Driver Store. Error: $($_.Exception)"
-    Exit 1
-}
-
-# Install the driver if there was no error
-Try {
-    Write-Output "Installing Printer Driver to Print Management"
-    Add-PrinterDriver -Name $DriverName -Confirm:$false
-}
-Catch {
-    Write-Output "An error occurred while installing the driver to the Print Management. Error: $($_.Exception)"
-    Exit 1
-}
-
-Write-Output "Script has completed successfully."
-Exit 0
+} 
